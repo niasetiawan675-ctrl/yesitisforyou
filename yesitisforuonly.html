@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jingga Membiru - K for K</title>
+    <style>
+        /* Mengimpor Font Vintage */
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: url('pixel-art.gif') no-repeat center center fixed;
+            background-size: cover;
+            font-family: 'EB Garamond', serif;
+            overflow: hidden;
+        }
+
+        /* Style untuk Gambar Meme */
+        #memePopup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            z-index: 10000; /* Harus lebih tinggi dari overlay password */
+            transition: transform 0.3s ease-in-out;
+            max-width: 80%;
+            border: 5px solid #634832;
+            border-radius: 10px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+        }
+
+        #memePopup.show {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        /* Overlay Password */
+        #passwordOverlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(44, 30, 22, 0.95); /* Warna coklat tua vintage */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: #fdf5e6;
+        }
+
+        #passwordOverlay input {
+            padding: 10px;
+            margin-top: 15px;
+            border-radius: 5px;
+            border: 1px solid #d4a373;
+            background: #fdf5e6;
+            text-align: center;
+            font-family: 'EB Garamond', serif;
+        }
+
+        #passwordOverlay button {
+            margin-top: 10px;
+            padding: 8px 20px;
+            background: #d4a373;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        /* Overlay gelap agar teks lebih mudah dibaca */
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 0;
+        }
+
+        .envelope-wrapper {
+            position: relative;
+            z-index: 1;
+            cursor: pointer;
+            /* Posisi awal dibuat agak rendah agar saat kertas turun tidak terpotong */
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+
+        /* Amplop */
+        .envelope {
+            position: relative;
+            width: 320px;
+            height: 220px;
+            background: #d4a373; /* Coklat vintage */
+            border-bottom-left-radius: 6px;
+            border-bottom-right-radius: 6px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+        }
+
+        /* Penutup Depan (Sisi samping dan bawah) */
+        .envelope::after {
+            content: "";
+            position: absolute;
+            z-index: 3;
+            width: 0; height: 0;
+            border-top: 110px solid transparent;
+            border-left: 160px solid #e2bc94;
+            border-right: 160px solid #e2bc94;
+            border-bottom: 110px solid #e2bc94;
+            bottom: 0;
+            border-radius: 0 0 6px 6px;
+        }
+
+        /* Penutup Atas (Flap) */
+        .flap {
+            position: absolute;
+            top: 0; width: 0; height: 0;
+            border-top: 115px solid #bc8a5f;
+            border-left: 160px solid transparent;
+            border-right: 160px solid transparent;
+            transform-origin: top;
+            transition: transform 0.6s ease;
+            z-index: 4;
+        }
+
+        /* Kertas Surat */
+        .letter {
+            position: absolute;
+            bottom: 10px; left: 10px;
+            width: 300px;
+            height: 190px;
+            background: #fdf5e6; /* Cream hangat */
+            padding: 25px 20px;
+            box-shadow: inset 0 0 30px rgba(212, 163, 115, 0.2);
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 2;
+            overflow-y: auto;
+            color: #4a3728;
+            scrollbar-width: thin;
+        }
+
+        /* Scrollbar styling untuk kesan vintage */
+        .letter::-webkit-scrollbar { width: 5px; }
+        .letter::-webkit-scrollbar-thumb { background: #d4a373; }
+
+        /* Animasi Buka */
+        .envelope-wrapper.open .flap {
+            transform: rotateX(180deg);
+            z-index: 1;
+        }
+
+        .envelope-wrapper.open .letter {
+            /* Kertas keluar dan meluncur turun ke depan amplop */
+            transform: translateY(220px); 
+            height: 480px;
+            z-index: 10;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        /* Konten Puisi */
+        .poem-content {
+            opacity: 0;
+            transition: opacity 0.5s 0.6s;
+            text-align: center;
+        }
+
+        .envelope-wrapper.open .poem-content {
+            opacity: 1;
+        }
+
+        /* Musik Player */
+        .audio-player {
+            margin-bottom: 20px;
+            padding: 10px;
+            border-bottom: 1px dashed #d4a373;
+        }
+
+        .btn-play {
+            background: #634832;
+            color: #fdf5e6;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin: 0 5px;
+            font-family: 'EB Garamond', serif;
+        }
+
+        h2 { font-family: 'Dancing Script', cursive; margin: 10px 0; font-size: 1.8rem; color: #634832; }
+        .author { font-size: 0.9rem; font-style: italic; opacity: 0.8; }
+        .text { font-size: 1.05rem; line-height: 1.7; white-space: pre-line; margin-top: 15px; }
+
+        /* Responsif Mobile */
+        @media (max-width: 480px) {
+            .envelope { width: 280px; height: 190px; }
+            .flap { border-left-width: 140px; border-right-width: 140px; border-top-width: 100px; }
+            .envelope::after { border-left-width: 140px; border-right-width: 140px; border-top-width: 100px; border-bottom-width: 100px; }
+            .letter { width: 260px; }
+            .envelope-wrapper.open .letter { height: 420px; transform: translateY(180px); }
+        }
+    </style>
+</head>
+<body>
+     <img src="salahpw.jpg" id="memePopup" alt="Meme Salah Password">
+    <div id="passwordOverlay">
+        <h3>Masukkan Kata Sandi untuk Membaca</h3>
+        <input type="password" id="passInput" placeholder="Ketik di sini...">
+        <button onclick="checkPassword()">Buka Surat</button>
+        <p id="errorMsg" style="color: #ff6b6b; margin-top: 10px; display: none;">Kata sandi salah!</p>
+    </div>
+   
+
+    <div class="envelope-wrapper" id="envelopeWrapper">
+        <div class="flap"></div>
+        <div class="envelope">
+            <div class="letter" id="letterBox">
+                <div class="poem-content">
+                    <div class="audio-player">
+                        <button class="btn-play" onclick="controlMusic('play')">Play ♫</button>
+                        <button class="btn-play" onclick="controlMusic('pause')">Pause</button>
+                    </div>
+
+                    <span class="author">written by "K for K"</span>
+                    <h2>Jingga Membiru</h2>
+                    
+                    <div class="text">
+                        Badai Tuan, telah berlalu 
+
+                        Namun tidak dengan anganku
+
+                        Ini bukanlah ungkapan pilu, mungkin....
+
+                        Hanyalah insan yang telah lama tak bersua syahdu.
+
+                        Apakabarmu hari ini? Ku harap kau sehat selalu.
+
+
+                        Pffth... Lucu sekali...
+
+                        Kau memang hanya datang sekali, 
+                        namun kau tinggal berhari-hari
+
+                        Berjam-jam
+
+                        Bermenit-menit
+
+                        Berdetik-detik
+
+                        Seolah kau menggantikan detak nadi.
+
+                        Dasar si rambut ikal manis berkacamata ini...
+
+                        Setidaknya itulah yang dikatakan oleh Hipokampus dan Amigdala.
+
+                        Kardiak memberitahuku jika kau memiliki rumah lain.
+                        Ternyata Neokorteks juga telah menjadi rumahmu.
+
+                        Lobus Temporal ruangan favoritmu, 
+                        dan Lobus Oksipital, tempat di mana biasanya kau duduk.
+
+
+                        Beberapa lantunan melodi yang kudengar
+
+                        Jalanan yang ku tapaki
+
+                        dan tempat-tempat yang ku kunjungi 
+
+                        Canda tawa yang sempat terlepas liar di sini,
+                        dan tangis yang kemudian terkikis
+
+                        Lalu tawaran tangan yang tanpa pamrih meggenggam
+                        Atau hanya sekadar kata yang menenangkan hati
+
+                        Juga ekspresi dan ungkapan yang paling jujur dari seseorang.
+
+                        Membuatku bertanya pada diriku sendiri 
+                        Apakah aku hanya sekadar bernostalgia? Atau ada hal lain?
+
+                        Ku kira langit
+                        Rupanya hatiku yang sedang bergemuruh
+                        Mengapa?
+
+
+                        Rasa familiar yg samar-samar...
+                        Dari bunga tidur yang semalam mekar
+
+                        Masih ku ingat kaos polo hitam dan wajahmu samar...
+                        Sisa-sisa tidurku yang berpendar
+
+                        Duhai niat baik apa yang tak sempat ku lamar?
+
+                        Semua hal membawaku padamu kembali
+                        Kesekian kalinya...
+
+                        Dusta jika aku berkata seluruh tulisan ini hanyalah iseng semata...
+
+
+                        Aku ingin bertanya 
+                        Apakah kau demikian juga??
+
+                        Bisakah ku tahu juga...
+
+                        Tentang berapa kali namaku bergema di sudut-sudut anganmu??
+                        Atau.... 
+                        
+                        Pernahkah??
+
+                        Let me hear about it, may I?
+
+
+                        Senja telah berlalu.
+                    
+                        Langit telah bergeser jingga 
+                        Namun hatiku masih biru.
+
+                        Dari hujan deras semalam
+                        Dingin dan sepi ditemani hantumu.
+
+                        Seperti matahari yang merindukan bulan di langit pagi.
+
+                        Jika memang aku telah dikutuk,
+                        aku tak masalah jika dihantui olehmu, hehe
+
+                        Bulan suci kembali datang melepas rindu.
+
+                        Maafkan diri ini atas kesalahan yang pernah terlalu.
+
+                        Aku juga memaafkanmu.
+
+                        Aku berdoa, semoga kebaikan selalu menyertaimu
+
+
+                        Maaf, lama ku tak datang, bahkan untuk sekedar berkabar.
+
+                        Aku sedang dalam perjalanan membebaskan diri dari belenggu sangkar.
+
+                        Agar suatu hari nanti jika kita bertemu lagi, aku sudah indah mekar
+
+                        Namun, aku selalu berdoa dan berharap kepada Tuhan semoga...
+                        aku bisa selalu bersamamu, meski... bukan sekarang.
+
+                        Mungkin nanti... suatu hari kelak.
+
+                        Aku berharap semoga 
+                        aku bisa selalu bertemu denganmu lagi...
+
+                        Aamiin
+
+
+                        Adios, chao... Mi Rey ~
+
+
+                        <strong> </strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <audio id="bgMusic" loop>
+    <source src="SampaiJadiDebu(Instrumental)Killercats.mp3" type="audio/mpeg">
+</audio>
+
+    <script>
+        const wrapper = document.getElementById('envelopeWrapper');
+        const music = document.getElementById('bgMusic');
+
+        // Fungsi Buka Amplop
+        wrapper.addEventListener('click', function(e) {
+            // Jika klik pada tombol musik, jangan tutup amplopnya
+            if (e.target.tagName === 'BUTTON') return;
+            this.classList.toggle('open');
+        });
+
+        // Kontrol Musik
+        function controlMusic(action) {
+            if (action === 'play') {
+                music.play();
+            } else {
+                music.pause();
+            }
+        }
+        function checkPassword() {
+            const passwordInput = document.getElementById('passInput').value;
+            const correctPassword = "1754"; // Ganti dengan password pilihanmu
+            const overlay = document.getElementById('passwordOverlay');
+            const meme = document.getElementById('memePopup');
+            const error = document.getElementById('errorMsg');
+
+            if (passwordInput === correctPassword) {
+                overlay.style.display = 'none';
+            } else {
+                // Munculkan meme
+                meme.classList.add('show');
+                error.style.display = 'block';
+                
+                // Hilangkan meme kembali setelah 2 detik
+                setTimeout(() => {
+                    meme.classList.remove('show');
+                }, 2000); 
+
+                // Reset input password
+                document.getElementById('passInput').value = "";
+            }
+        }
+
+        // Tambahan agar bisa tekan 'Enter' untuk masuk
+        document.getElementById('passInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+    </script>
+</body>
+</html>
